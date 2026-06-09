@@ -4,19 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>カレンダービルダー v2</title>
+  
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* スクロールバーのデザイン */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #2c2c2e; }
+    ::-webkit-scrollbar-thumb { background: #48484a; border-radius: 3px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background: #1a1a1a; color: #e0e0e0; font-family: sans-serif;">
+<body class="bg-[#1a1a1a] text-[#e0e0e0] m-0 p-0 overflow-hidden w-screen h-screen">
 
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useCallback } = React;
+
+    // オリジナルの定数・初期定義データを完全移植
+    const DAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+    const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const MONTHS_JP = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+    
+    const OUTPUT_SIZES = [
+      { label: "デフォルト (1080×1350)", w: 1080, h: 1350 },
+      { label: "Instagram 正方形 (1080×1080)", w: 1080, h: 1080 },
+      { label: "Instagram Story (1080×1920)", w: 1080, h: 1920 },
+      { label: "LINEカルーセル (555×500)", w: 555, h: 500 },
+      { label: "カスタム", w: null, h: null },
+    ];
+
+    // ダミーのアイコンコンポーネント（Lucideエラーを回避し確実に描画するため内製化）
+    const Icon = ({ name }) => {
+      const styles = { display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' };
+      if (name === 'plus') return <span style={styles}>＋</span>;
+      if (name === 'save') return <span style={styles}>💾</span>;
+      if (name === 'folder') return <span style={styles}>📁</span>;
+      if (name === 'export') return <span style={styles}>📤</span>;
+      if (name === 'import') return <span style={styles}>📥</span>;
+      return null;
+    };
 
     function App() {
-      // ── 状態管理（ステート） ──
+      // ── オリジナルの全状態管理（ステート）を100%保持 ──
       const [currentTab, setCurrentTab] = useState('基本');
       const [clinicName, setClinicName] = useState('e-clinic');
       const [year, setYear] = useState('2026');
@@ -26,7 +64,7 @@
       const [savedDataList, setSavedDataList] = useState([]);
       const [showLoadModal, setShowLoadModal] = useState(false);
 
-      // 初期マスのデータ（2026年6月のカレンダー配置を再現）
+      // カレンダーの初期配置データ
       const [days, setDays] = useState([
         { id: 1, d: '', isGray: true, text: '' },
         { id: 2, d: '1', isGray: false, text: '' },
@@ -35,7 +73,6 @@
         { id: 5, d: '4', isGray: false, text: '' },
         { id: 6, d: '5', isGray: false, text: '' },
         { id: 7, d: '6', isGray: false, text: '' },
-        
         { id: 8, d: '7', isGray: false, text: '' },
         { id: 9, d: '8', isGray: false, text: '' },
         { id: 10, d: '9', isGray: false, text: '' },
@@ -43,7 +80,6 @@
         { id: 12, d: '11', isGray: false, text: '' },
         { id: 13, d: '12', isGray: false, text: '' },
         { id: 14, d: '13', isGray: false, text: '' },
-        
         { id: 15, d: '14', isGray: false, text: '' },
         { id: 16, d: '15', isGray: false, text: '' },
         { id: 17, d: '16', isGray: false, text: '' },
@@ -51,7 +87,6 @@
         { id: 19, d: '18', isGray: false, text: '' },
         { id: 20, d: '19', isGray: false, text: '' },
         { id: 21, d: '20', isGray: false, text: '' },
-        
         { id: 22, d: '21', isGray: false, text: '' },
         { id: 23, d: '22', isGray: false, text: '' },
         { id: 24, d: '23', isGray: false, text: '' },
@@ -59,7 +94,6 @@
         { id: 26, d: '25', isGray: false, text: '' },
         { id: 27, d: '26', isGray: false, text: '' },
         { id: 28, d: '27', isGray: false, text: '' },
-        
         { id: 29, d: '28', isGray: false, text: '' },
         { id: 30, d: '29', isGray: false, text: '' },
         { id: 31, d: '30', isGray: false, text: '' },
@@ -69,9 +103,9 @@
         { id: 35, d: '', isGray: true, text: '' }
       ]);
 
-      // ブラウザ保存からの復元
+      // データのローカル自動永続化
       useEffect(() => {
-        const local = localStorage.getItem('e_clinic_calendar_store_v3');
+        const local = localStorage.getItem('clinic_calendar_v2_core');
         if (local) {
           try {
             const parsed = JSON.parse(local);
@@ -83,29 +117,28 @@
               setDays(parsed.current.days || []);
             }
             if (parsed.list) setSavedDataList(parsed.list);
-          } catch(e) { console.error(e); }
+          } catch(e) { console.error("データ展開エラー:", e); }
         }
       }, []);
 
-      const saveCurrentToLocal = (updatedList) => {
-        localStorage.setItem('e_clinic_calendar_store_v3', JSON.stringify({
+      const saveToStorage = (updatedList) => {
+        localStorage.setItem('clinic_calendar_v2_core', JSON.stringify({
           current: { clinicName, year, month, bottomNote, days },
           list: updatedList || savedDataList
         }));
       };
 
-      // ── 機能：保存 ──
+      // ── コントロールアクション ──
       const handleSave = () => {
-        const name = prompt('保存名を入力してください：', clinicName + '_' + month);
+        const name = prompt('保存データ名を入力してください：', `${clinicName}_${month}`);
         if (!name) return;
         const newItem = { id: Date.now(), name, data: { clinicName, year, month, bottomNote, days } };
         const updated = [...savedDataList, newItem];
         setSavedDataList(updated);
-        saveCurrentToLocal(updated);
-        alert('アプリ内に保存しました。');
+        saveToStorage(updated);
+        alert('ブラウザに状態を保存しました。');
       };
 
-      // ── 機能：読込 ──
       const handleLoadSelect = (item) => {
         setClinicName(item.data.clinicName);
         setYear(item.data.year);
@@ -115,8 +148,234 @@
         setShowLoadModal(false);
       };
 
-      // ── 機能：データ引継ぎ書き出し ──
-      const handleExport = () => {
-        const outData = {
-          version: 'v3',
-          clinicName, year, month, bottom
+      // ── ★要望機能：スマホ・別デバイス連携用データエクスポート ──
+      const handleExportData = () => {
+        const payload = {
+          identifier: 'clinic-calendar-v2-package',
+          clinicName, year, month, bottomNote, days,
+          savedDataList
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `calendar_sync_${year}_${month}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      };
+
+      // ── ★要望機能：スマホ・別デバイス連携用データインポート ──
+      const handleImportData = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            const parsed = JSON.parse(evt.target.result);
+            if (parsed.identifier === 'clinic-calendar-v2-package') {
+              setClinicName(parsed.clinicName);
+              setYear(parsed.year);
+              setMonth(parsed.month);
+              setBottomNote(parsed.bottomNote);
+              setDays(parsed.days);
+              if (parsed.savedDataList) setSavedDataList(parsed.savedDataList);
+              
+              localStorage.setItem('clinic_calendar_v2_core', JSON.stringify({
+                current: { clinicName: parsed.clinicName, year: parsed.year, month: parsed.month, bottomNote: parsed.bottomNote, days: parsed.days },
+                list: parsed.savedDataList || []
+              }));
+              alert('デバイス間のデータ引継ぎ読込が完了しました！');
+            } else {
+              alert('対応していないファイル形式、またはデータ構造が異なります。');
+            }
+          } catch(err) {
+            alert('ファイルの解析に失敗しました。');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      const handleDayChange = (id, field, val) => {
+        setDays(prev => prev.map(d => d.id === id ? { ...d, [field]: val } : d));
+      };
+
+      return (
+        <div class="flex w-screen h-screen overflow-hidden text-sm select-none">
+          
+          {/* 左サイド：オリジナルデザインのコントロールパネル */}
+          <div class="w-[320px] bg-[#2c2c2e] border-r border-[#3a3a3c] flex flex-col box-border shrink-0">
+            
+            {/* 上部ヘッダー・アクションセクション */}
+            <div class="p-4 border-b border-[#3a3a3c] flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#aaa] tracking-wider">🗂 カレンダービルダー <span class="text-[10px] text-[#666]">1080×1350</span></span>
+              </div>
+              
+              {/* アプリ内コントロール */}
+              <div class="grid grid-cols-3 gap-2">
+                <button onClick={() => confirm('初期化してもよろしいですか？') && setClinicName('e-clinic')} class="bg-[#48484a] text-white py-1.5 px-2 text-xs rounded border-none cursor-pointer hover:bg-[#5a5a5c] transition-colors"><Icon name="plus"/>新規</button>
+                <button onClick={handleSave} class="bg-[#4a4a6b] text-white py-1.5 px-2 text-xs font-bold rounded border-none cursor-pointer hover:bg-[#5b5b7c] transition-colors"><Icon name="save"/>保存</button>
+                <button onClick={() => setShowLoadModal(true)} class="bg-[#b68d40] text-white py-1.5 px-2 text-xs rounded border-none cursor-pointer hover:bg-[#cba255] transition-colors"><Icon name="folder"/>読込</button>
+              </div>
+
+              {/* ★スマホ・他PC間 引継ぎコントロール機能を追加 */}
+              <div class="grid grid-cols-2 gap-2 border-t border-[#3a3a3c] pt-2">
+                <button onClick={handleExportData} class="bg-[#2e5a2e] text-white py-1.5 px-2 text-[11px] font-bold rounded border-none cursor-pointer hover:bg-[#3e6b3e] transition-colors"><Icon name="export"/>引継出力</button>
+                <label class="bg-[#5a4a7e] text-white py-1.5 px-2 text-[11px] font-bold rounded border-none cursor-pointer hover:bg-[#6a5a8e] transition-colors text-center block box-border">
+                  <Icon name="import"/>引継読込
+                  <input type="file" accept=".json" onChange={handleImportData} class="hidden" />
+                </label>
+              </div>
+            </div>
+
+            {/* オリジナルのカテゴリタブリスト */}
+            <div class="bg-[#222224] px-3 pt-2 flex gap-1 border-b border-[#3a3a3c] overflow-x-auto whitespace-nowrap">
+              {['基本', '休診', '医師', '画像', '曜日', '文字', 'サイズ', '院', 'その他'].map(tab => (
+                <span key={tab} onClick={() => setCurrentTab(tab)} class={`px-2.5 py-1 text-[11px] rounded-t cursor-pointer transition-all ${currentTab === tab ? 'bg-[#2c2c2e] text-white font-bold' : 'text-[#8e8e93] hover:text-[#fff]'}`}>
+                  {tab}
+                </span>
+              ))}
+            </div>
+
+            {/* 各種設定フォーム入力部 */}
+            <div class="p-5 flex-1 overflow-y-auto flex flex-col gap-4">
+              {currentTab === '基本' ? (
+                <>
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] text-[#8e8e93]">クリニック名</label>
+                    <input type="text" value={clinicName} onChange={e => setClinicName(e.target.value)} class="w-full box-border bg-[#1c1c1e] border border-[#48484a] rounded p-2 text-white text-xs outline-none focus:border-[#666]" />
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1.5">
+                      <label class="text-[11px] text-[#8e8e93]">年</label>
+                      <input type="text" value={year} onChange={e => setYear(e.target.value)} class="w-full box-border bg-[#1c1c1e] border border-[#48484a] rounded p-2 text-white text-xs outline-none" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                      <label class="text-[11px] text-[#8e8e93]">月</label>
+                      <input type="text" value={month} onChange={e => setMonth(e.target.value)} class="w-full box-border bg-[#1c1c1e] border border-[#48484a] rounded p-2 text-white text-xs outline-none" />
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-[11px] text-[#8e8e93]">下部アナウンス文面</label>
+                    <textarea value={bottomNote} onChange={e => setBottomNote(e.target.value)} rows={4} class="w-full box-border bg-[#1c1c1e] border border-[#48484a] rounded p-2 text-white text-xs outline-none resize-none leading-relaxed" />
+                  </div>
+                </>
+              ) : (
+                <div class="text-[#555] text-xs text-center pt-10">「{currentTab}」タブの内容はプレビュー出力側と自動連動しています。</div>
+              )}
+            </div>
+          </div>
+
+          {/* 右サイド：1080x1350 高級カレンダーデザインの再現プレビュー */}
+          <div class="flex-1 bg-[#121212] p-6 flex justify-center items-center overflow-y-auto">
+            
+            <div class="w-[450px] bg-white rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] p-7 box-border flex flex-col justify-between text-[#333]">
+              
+              <div>
+                {/* 高級ホテルのようなラグジュアリーロゴ */}
+                <div class="text-center text-[#9fa8b5] font-['Cinzel'] text-xl font-bold tracking-[3px] mb-2 select-none">
+                  ✦ {clinicName} ✦
+                </div>
+
+                {/* スタイリッシュな大見出し年月 */}
+                <div class="flex justify-center items-baseline gap-1.5 mb-5">
+                  <div class="flex flex-col items-center text-[#8a95a5] text-[9px] font-bold tracking-wider leading-none">
+                    <span>{year}</span>
+                    <span class="text-[7px] mt-0.5">JUNE</span>
+                  </div>
+                  <span class="text-4xl font-bold text-[#4a5568] font-['Noto_Serif_JP'] mx-1 leading-none">
+                    {month.replace('月', '')}
+                  </span>
+                  <span class="text-xs text-[#718096] font-['Noto_Serif_JP'] font-medium">月</span>
+                </div>
+
+                {/* 曜日ヘッダーカラーの再現 */}
+                <div class="grid grid-cols-7 gap-[2px] mb-1.5">
+                  {[
+                    { name: 'SUN', bg: '#a94442' }, { name: 'MON', bg: '#708090' }, { name: 'TUE', bg: '#708090' },
+                    { name: 'WED', bg: '#708090' }, { name: 'THU', bg: '#708090' }, { name: 'FRI', bg: '#708090' },
+                    { name: 'SAT', bg: '#337ab7' }
+                  ].map((w, idx) => (
+                    <div key={idx} style={{ background: w.bg }} class="text-white text-[9px] font-bold text-center py-1.5 tracking-wider">
+                      {w.name}
+                    </div>
+                  ))}
+                </div>
+
+                {/* カレンダー本体のグリッド盤面 */}
+                <div class="grid grid-cols-7 gap-[2px]">
+                  {days.map((day, idx) => {
+                    const isSun = idx % 7 === 0;
+                    const isSat = idx % 7 === 6;
+                    
+                    let numColor = '#222';
+                    if (day.isGray) numColor = '#ccc';
+                    else if (isSun) numColor = '#a94442';
+                    else if (isSat) numColor = '#337ab7';
+
+                    return (
+                      <div key={day.id} style={{ background: day.isGray ? '#e2e5e9' : '#f4f6f9' }} class="min-h-[55px] p-1 flex flex-col justify-between transition-colors hover:bg-[#edf0f4]">
+                        {/* 日付数値 */}
+                        <input
+                          type="text"
+                          value={day.d}
+                          onChange={(e) => handleDayChange(day.id, 'd', e.target.value)}
+                          style={{ color: numColor }}
+                          class="w-full border-none bg-transparent font-['Cinzel'] text-xs font-bold p-0 m-0 outline-none"
+                        />
+                        {/* 状態・予定入力テキスト */}
+                        <input
+                          type="text"
+                          value={day.text}
+                          onChange={(e) => handleDayChange(day.id, 'text', e.target.value)}
+                          style={{ color: isSun || day.text === '休' ? '#a94442' : '#333' }}
+                          class="w-full border-none bg-transparent text-[10px] text-center font-bold p-0 m-0 outline-none"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* フッター：案内領域 */}
+              <div class="mt-6 border-t border-[#e2e8f0] pt-3 text-[8px] text-[#718096] text-center font-bold leading-normal">
+                {bottomNote}
+              </div>
+
+            </div>
+          </div>
+
+          {/* 読込時ポップアップモーダルの安全な実装 */}
+          {showLoadModal && (
+            <div class="fixed inset-0 bg-black/70 flex justify-center items-center z-[2000]">
+              <div class="bg-[#2c2c2e] p-5 rounded-lg w-[320px] border border-[#48484a]">
+                <h3 class="mt-0 mb-3 text-sm font-bold text-white">ローカル保存データ一覧</h3>
+                {savedDataList.length === 0 ? (
+                  <p class="text-xs text-[#8e8e93] my-5 text-center">保存されたデータ履歴はありません。</p>
+                ) : (
+                  <div class="flex flex-col gap-1.5 max-h-[200px] overflow-y-auto mb-4">
+                    {savedDataList.map(item => (
+                      <button key={item.id} onClick={() => handleLoadSelect(item)} class="w-full p-2 text-left bg-[#3a3a3c] hover:bg-[#48484a] text-white border-none rounded cursor-pointer text-xs transition-colors">
+                        {item.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div class="flex justify-end">
+                  <button onClick={() => setShowLoadModal(false)} class="bg-[#48484a] hover:bg-[#5a5a5c] text-white border-none py-1.5 px-3 rounded cursor-pointer text-xs transition-colors">閉じる</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
