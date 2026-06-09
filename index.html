@@ -7,11 +7,8 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
 </head>
-<body style="margin: 0; padding: 0; background: #1a1a1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background: #1a1a1a; color: #e0e0e0; font-family: sans-serif;">
 
   <div id="root"></div>
 
@@ -26,43 +23,100 @@
       const [month, setMonth] = useState('6月');
       const [bottomNote, setBottomNote] = useState('ご予約はLINEから。休診日のお問合せは翌営業日に順次ご返信とさせていただきます。');
       
-      // バックアップ・引継ぎ用データストア
       const [savedDataList, setSavedDataList] = useState([]);
       const [showLoadModal, setShowLoadModal] = useState(false);
 
-      // カレンダーの日付初期データ（2026年6月：月曜始まりベース、前後グレー枠を再現）
+      // 初期マスのデータ（2026年6月のカレンダー配置を再現）
       const [days, setDays] = useState([
-        { id: 1, d: '', isGray: true, text: '', status: '' },
-        { id: 2, d: '1', isGray: false, text: '', status: '' },
-        { id: 3, d: '2', isGray: false, text: '', status: '' },
-        { id: 4, d: '3', isGray: false, text: '', status: '' },
-        { id: 5, d: '4', isGray: false, text: '', status: '' },
-        { id: 6, d: '5', isGray: false, text: '', status: '' },
-        { id: 7, d: '6', isGray: false, text: '', status: '' },
+        { id: 1, d: '', isGray: true, text: '' },
+        { id: 2, d: '1', isGray: false, text: '' },
+        { id: 3, d: '2', isGray: false, text: '' },
+        { id: 4, d: '3', isGray: false, text: '' },
+        { id: 5, d: '4', isGray: false, text: '' },
+        { id: 6, d: '5', isGray: false, text: '' },
+        { id: 7, d: '6', isGray: false, text: '' },
         
-        { id: 8, d: '7', isGray: false, text: '', status: '' },
-        { id: 9, d: '8', isGray: false, text: '', status: '' },
-        { id: 10, d: '9', isGray: false, text: '', status: '' },
-        { id: 11, d: '10', isGray: false, text: '', status: '' },
-        { id: 12, d: '11', isGray: false, text: '', status: '' },
-        { id: 13, d: '12', isGray: false, text: '', status: '' },
-        { id: 14, d: '13', isGray: false, text: '', status: '' },
+        { id: 8, d: '7', isGray: false, text: '' },
+        { id: 9, d: '8', isGray: false, text: '' },
+        { id: 10, d: '9', isGray: false, text: '' },
+        { id: 11, d: '10', isGray: false, text: '' },
+        { id: 12, d: '11', isGray: false, text: '' },
+        { id: 13, d: '12', isGray: false, text: '' },
+        { id: 14, d: '13', isGray: false, text: '' },
         
-        { id: 15, d: '14', isGray: false, text: '', status: '' },
-        { id: 16, d: '15', isGray: false, text: '', status: '' },
-        { id: 17, d: '16', isGray: false, text: '', status: '' },
-        { id: 18, d: '17', isGray: false, text: '', status: '' },
-        { id: 19, d: '18', isGray: false, text: '', status: '' },
-        { id: 20, d: '19', isGray: false, text: '', status: '' },
-        { id: 21, d: '20', isGray: false, text: '', status: '' },
+        { id: 15, d: '14', isGray: false, text: '' },
+        { id: 16, d: '15', isGray: false, text: '' },
+        { id: 17, d: '16', isGray: false, text: '' },
+        { id: 18, d: '17', isGray: false, text: '' },
+        { id: 19, d: '18', isGray: false, text: '' },
+        { id: 20, d: '19', isGray: false, text: '' },
+        { id: 21, d: '20', isGray: false, text: '' },
         
-        { id: 22, d: '21', isGray: false, text: '', status: '' },
-        { id: 23, d: '22', isGray: false, text: '', status: '' },
-        { id: 24, d: '23', isGray: false, text: '', status: '' },
-        { id: 25, d: '24', isGray: false, text: '', status: '' },
-        { id: 26, d: '25', isGray: false, text: '', status: '' },
-        { id: 27, d: '26', isGray: false, text: '', status: '' },
-        { id: 28, d: '27', isGray: false, text: '', status: '' },
+        { id: 22, d: '21', isGray: false, text: '' },
+        { id: 23, d: '22', isGray: false, text: '' },
+        { id: 24, d: '23', isGray: false, text: '' },
+        { id: 25, d: '24', isGray: false, text: '' },
+        { id: 26, d: '25', isGray: false, text: '' },
+        { id: 27, d: '26', isGray: false, text: '' },
+        { id: 28, d: '27', isGray: false, text: '' },
         
-        { id: 29, d: '28', isGray: false, text: '', status: '' },
-        { id: 30, d: '29', isGray: false, text: '', status
+        { id: 29, d: '28', isGray: false, text: '' },
+        { id: 30, d: '29', isGray: false, text: '' },
+        { id: 31, d: '30', isGray: false, text: '' },
+        { id: 32, d: '', isGray: true, text: '' },
+        { id: 33, d: '', isGray: true, text: '' },
+        { id: 34, d: '', isGray: true, text: '' },
+        { id: 35, d: '', isGray: true, text: '' }
+      ]);
+
+      // ブラウザ保存からの復元
+      useEffect(() => {
+        const local = localStorage.getItem('e_clinic_calendar_store_v3');
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            if (parsed.current) {
+              setClinicName(parsed.current.clinicName || 'e-clinic');
+              setYear(parsed.current.year || '2026');
+              setMonth(parsed.current.month || '6月');
+              setBottomNote(parsed.current.bottomNote || '');
+              setDays(parsed.current.days || []);
+            }
+            if (parsed.list) setSavedDataList(parsed.list);
+          } catch(e) { console.error(e); }
+        }
+      }, []);
+
+      const saveCurrentToLocal = (updatedList) => {
+        localStorage.setItem('e_clinic_calendar_store_v3', JSON.stringify({
+          current: { clinicName, year, month, bottomNote, days },
+          list: updatedList || savedDataList
+        }));
+      };
+
+      // ── 機能：保存 ──
+      const handleSave = () => {
+        const name = prompt('保存名を入力してください：', clinicName + '_' + month);
+        if (!name) return;
+        const newItem = { id: Date.now(), name, data: { clinicName, year, month, bottomNote, days } };
+        const updated = [...savedDataList, newItem];
+        setSavedDataList(updated);
+        saveCurrentToLocal(updated);
+        alert('アプリ内に保存しました。');
+      };
+
+      // ── 機能：読込 ──
+      const handleLoadSelect = (item) => {
+        setClinicName(item.data.clinicName);
+        setYear(item.data.year);
+        setMonth(item.data.month);
+        setBottomNote(item.data.bottomNote);
+        setDays(item.data.days);
+        setShowLoadModal(false);
+      };
+
+      // ── 機能：データ引継ぎ書き出し ──
+      const handleExport = () => {
+        const outData = {
+          version: 'v3',
+          clinicName, year, month, bottom
